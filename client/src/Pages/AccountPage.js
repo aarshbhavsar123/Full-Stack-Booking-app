@@ -20,7 +20,7 @@ const AccountPage = () => {
   const [extraInfo, setExtraInfo] = useState("");
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
-  const [price,setPrice] = useState();
+  const [price, setPrice] = useState();
   const [maxGuests, setMaxGuests] = useState(0);
   const [file, setFile] = useState();
   const [resFile, setResFile] = useState("");
@@ -106,7 +106,7 @@ const AccountPage = () => {
       checkIn,
       checkOut,
       maxGuests,
-      price
+      price,
     };
     try {
       if (action == "new") {
@@ -472,7 +472,7 @@ const AccountPage = () => {
                           <img
                             src={`http://localhost:4000/uploads/${place.photos[index]}`}
                             alt=""
-                            className="w-full h-full object-cover rounded-2xl "
+                            className="w-full h-full object-cover rounded-2xl"
                           />
                         )}
                       </div>
@@ -480,7 +480,7 @@ const AccountPage = () => {
                         <h2 className="text-lg font-semibold mb-2">
                           {place.title}
                         </h2>
-                        <p className="text-sm mt-2 whitespace-normal">
+                        <p className="text-sm mt-2 overflow-hidden max-h-16">
                           {place.description}
                         </p>
                       </div>
@@ -642,7 +642,8 @@ const AccountPage = () => {
                 </h2>
                 <p className="text-gray-500 text-sm">
                   Add check in and check out times, remember to have some time
-                  window for cleaning the room between guests. Also do not forget to add price per night.
+                  window for cleaning the room between guests. Also do not
+                  forget to add price per night.
                 </p>
                 <div className="grid sm:grid-cols-4 gap-2">
                   <div>
@@ -675,7 +676,7 @@ const AccountPage = () => {
                     />
                   </div>
                   <div>
-                  <h3 className="mt-2 -mb-1">Price:</h3>
+                    <h3 className="mt-2 -mb-1">Price:</h3>
                     <input
                       type="number"
                       required
@@ -684,7 +685,6 @@ const AccountPage = () => {
                       placeholder="Price($/night)"
                     />
                   </div>
-                
                 </div>
                 <div>
                   <button className="primary my-4">Save</button>
@@ -876,7 +876,7 @@ const AccountPage = () => {
                     />
                   </div>
                   <div>
-                  <h3 className="mt-2 -mb-1">Price:</h3>
+                    <h3 className="mt-2 -mb-1">Price:</h3>
                     <input
                       type="number"
                       required
