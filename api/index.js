@@ -15,7 +15,6 @@ const Booking = require("./models/Booking.js");
 const port = 4000;
 const bcryptSalt = bcrypt.genSaltSync(10);
 
-
 app.use(express.json());
 app.use(cookieParser());
 app.use(
@@ -85,7 +84,7 @@ app.post("/login", async (req, res) => {
       res.status(422).json("Pass Not Ok");
     }
   } else {
-    res.status(404).json({ error: 'User not found' });
+    res.status(404).json({ error: "User not found" });
   }
 });
 
@@ -101,10 +100,10 @@ app.get("/profile", (req, res) => {
   }
 });
 
-app.get("/places/:action",async (req,res)=>{
-  const {action} = req.params;
+app.get("/places/:action", async (req, res) => {
+  const { action } = req.params;
   res.json(await Place.findById(action));
-})
+});
 
 app.get("/getPlaces", async (req, res) => {
   try {
@@ -113,7 +112,7 @@ app.get("/getPlaces", async (req, res) => {
       jwt.verify(token, process.env.SECRET, {}, async (err, user) => {
         if (err) throw err;
         const places = await Place.find({ owner: user.id });
-        res.json(places)
+        res.json(places);
       });
     } else {
       res.status(401).send("Unauthorized");
@@ -123,7 +122,6 @@ app.get("/getPlaces", async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
-
 
 app.post("/logout", (req, res) => {
   res.cookie("token", "").json(true);
@@ -161,39 +159,112 @@ app.post("/places", (req, res) => {
       checkIn: req.body.checkIn,
       checkOut: req.body.checkOut,
       maxGuests: req.body.maxGuests,
-      price:req.body.price
+      price: req.body.price,
     });
     res.json(placeDoc);
   });
 });
-app.put("/places/:action",async (req,res)=>{
-  const {action} = req.params;
+app.put("/places/:action", async (req, res) => {
+  const { action } = req.params;
   const { token } = req.cookies;
   jwt.verify(token, process.env.SECRET, {}, async (err, user) => {
     if (err) throw err;
-    const placeDoc = await Place.updateOne({_id:action,owner:user.id},{
-      title: req.body.title,
-      address: req.body.address,
-      photos: req.body.uploadedImages,
-      description: req.body.description,
-      perks: req.body.perks,
-      extraInfo: req.body.extraInfo,
-      checkIn: req.body.checkIn,
-      checkOut: req.body.checkOut,
-      maxGuests: req.body.maxGuests,
-      price:req.body.price
-    });
+    const placeDoc = await Place.updateOne(
+      { _id: action, owner: user.id },
+      {
+        title: req.body.title,
+        address: req.body.address,
+        photos: req.body.uploadedImages,
+        description: req.body.description,
+        perks: req.body.perks,
+        extraInfo: req.body.extraInfo,
+        checkIn: req.body.checkIn,
+        checkOut: req.body.checkOut,
+        maxGuests: req.body.maxGuests,
+        price: req.body.price,
+      }
+    );
     res.json(placeDoc);
   });
-})
-app.get("/getAllPlaces",async(req,res)=>{
+});
+app.get("/getAllPlaces", async (req, res) => {
+  try {
+    const places = await Place.find();
+    res.json(places);
+  } catch (error) {
+    console.error("Error fetching places:", error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+app.post("/booking/:id", async (req, res) => {
+  const { id } = req.params;
+  const {
+    place,
+    checkInDate,
+    checkOutDate,
+    guests,
+    name,
+    phone,
+    price,
+    daysDifference,
+  } = req.body;
+  const { token } = req.cookies;
+
+  if (token) {
+    jwt.verify(token, process.env.SECRET, {}, async (err, user) => {
+      if (err) throw err;
+      const existingBooking = await Booking.findOne({
+        place: id,
+        $or: [
+          {
+            checkInDate: { $lt: req.body.checkOutDate },
+            checkOutDate: { $gt: req.body.checkInDate },
+          },
+          {
+            checkInDate: {
+              $gte: req.body.checkInDate,
+              $lt: req.body.checkOutDate,
+            },
+          },
+          {
+            checkOutDate: {
+              $gt: req.body.checkInDate,
+              $lte: req.body.checkOutDate,
+            },
+          },
+        ],
+      });
+
+      if (!existingBooking) {
+        const placeDoc = await Booking.create({
+          place: id,
+          user: user.id,
+          checkInDate: req.body.checkInDate,
+          checkOutDate: req.body.checkOutDate,
+          guests: req.body.guests,
+          name: req.body.name,
+          phone: req.body.phone,
+          totalPrice: req.body.price * req.body.daysDifference,
+        });
+        res.status(200).json({ message: "Booking created successfully" });
+      } else {
+        res.status(409).json({
+          message: "Booking date range conflicts with an existing booking",
+        });
+      }
+    });
+  } else {
+    res.status(401).send("Unauthorized");
+  }
+});
+app.get("/getBookedPlace", async (req, res) => {
   try {
     const { token } = req.cookies;
     if (token) {
       jwt.verify(token, process.env.SECRET, {}, async (err, user) => {
         if (err) throw err;
-        const places = await Place.find({ owner: {$ne: user.id} });
-        res.json(places)
+        const bookedPlaces = await Booking.find({ user: user.id }).populate("place");
+        res.json(bookedPlaces);
       });
     } else {
       res.status(401).send("Unauthorized");
@@ -202,55 +273,7 @@ app.get("/getAllPlaces",async(req,res)=>{
     console.error("Error fetching places:", error);
     res.status(500).send("Internal Server Error");
   }
-})
-app.post("/booking/:id",async (req,res)=>{
-  const {id} = req.params;
-  const {place,checkInDate,checkOutDate,guests,name,phone,price,daysDifference} = req.body;
-  const {token} = req.cookies;
-  
-    if (token) {
-      jwt.verify(token, process.env.SECRET, {}, async (err, user) => {
-        if (err) throw err;
-        const existingBooking = await Booking.findOne({
-          place: id,
-          $or: [
-            {
-              checkInDate: { $lt: req.body.checkOutDate },
-              checkOutDate: { $gt: req.body.checkInDate }
-            },
-            {
-              checkInDate: { $gte: req.body.checkInDate, $lt: req.body.checkOutDate }
-            },
-            {
-              checkOutDate: { $gt: req.body.checkInDate, $lte: req.body.checkOutDate }
-            }
-          ]
-        });
-        
-        if (!existingBooking) {
-          const placeDoc = await Booking.create({
-            place: id,
-            user: user.id,
-            checkInDate: req.body.checkInDate,
-            checkOutDate: req.body.checkOutDate,
-            guests: req.body.guests,
-            name: req.body.name,
-            phone: req.body.phone,
-            totalPrice: req.body.price * req.body.daysDifference
-          });
-          res.status(200).json({ message: 'Booking created successfully' });
-        } else {
-          res.status(409).json({ message: 'Booking date range conflicts with an existing booking' });
-        }
-        
-        
-      });
-      
-    } else {
-      res.status(401).send("Unauthorized");
-    }
-  
-})
+});
 app.listen(port, () => {
   console.log("Server running on port " + `${port}`);
 });

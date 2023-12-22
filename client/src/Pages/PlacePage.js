@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import { useEffect } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { differenceInDays, parse } from "date-fns";
+import { UserContext } from "../UserContext";
 const PlacePage = () => {
   const history = useNavigate();
   const { id } = useParams();
@@ -24,9 +25,16 @@ const PlacePage = () => {
   const [checkOutDate, setCheckOutDate] = useState("");
   const [guests, setGuests] = useState();
   const [daysDifference, setDaysDifference] = useState(null);
-  const [name, setName] = useState("");
+  const [name, setName] = useState(""); 
   const [phone, setPhone] = useState("");
   const [totalPrice, setTotalPrice] = useState();
+  const {user} = useContext(UserContext);
+  useEffect(()=>{
+      if(user)
+      {
+        setName(user.name);
+      }
+  },[user])
   useEffect(() => {
     if (!id || id == "new") {
       return;
@@ -60,20 +68,30 @@ const PlacePage = () => {
 
   async function handleBooking(e) {
     try{
-        const response = await axios.post("/booking/" + id, {
-        checkInDate,
-        checkOutDate,
-        guests,
-        name,
-        phone,
-        price,
-        daysDifference,
-      });
-      alert("Booking Successful");
-      history("/account/bookings");
+      if(daysDifference>0 && guests<=maxGuests)
+      {
+          const response = await axios.post("/booking/" + id, {
+          checkInDate,
+          checkOutDate,
+          guests,
+          name,
+          phone,
+          price,
+          daysDifference,
+        });
+        alert("Booking Successful");
+        history("/account/bookings/");
+      }
+      else if(daysDifference<=0)
+      {
+        alert("Check In Date should be prior to Check Out Date")
+      }
+      else{
+        alert("Number of Guests should be less than Maximum allowed guests")
+      } 
     }
     catch (error) {
-      alert("Booking Failed!! Try Again with some other dates as their is a booking for the provided date");
+      alert("Booking Failed!!");
       console.error(error);
     }
   }
