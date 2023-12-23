@@ -234,8 +234,8 @@ app.post("/booking/:id", async (req, res) => {
           },
         ],
       });
-
-      if (!existingBooking) {
+      const placeWithID = await Place.findById(id)
+      if (!existingBooking && user.id !== placeWithID.owner) {
         const placeDoc = await Booking.create({
           place: id,
           user: user.id,
